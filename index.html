@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Gym Timer</title>
+</head>
+
+<body>
+  <ul id="exerciseList"></ul>
+
+  <input type="text" id="nameInput" placeholder="種目名">
+  <input type="number" id="setInput" placeholder="セット数">
+  <input type="number" id="IntervalInput" placeholder="インターバル">
+
+  <button id="timerBtn">スタート</button>
+  <button id="addBtn">追加</button>
+
+  <h1 id="timer"></h1>
+
+  <script>
+    let exercises = [];
+    let currentExerciseIndex = 0;
+    let isRunning = false;
+    let hasStarted = false;// タイマーが開始されたかどうかを追跡するフラグ
+
+    let timeLeft;
+    const display = document.getElementById("timer");
+    const timerBtn = document.getElementById("timerBtn");
+    const addBtn = document.getElementById("addBtn");
+    const list = document.getElementById("exerciseList");
+
+
+    let intervalId;
+    timerBtn.addEventListener("click", function () {
+      isRunning = !isRunning;
+      console.log("isRunning:", isRunning);
+      console.log("hasStarted:", hasStarted);
+      console.log("timeLeft:", timeLeft);
+      if (isRunning) {//タイマーが動き出した場合（直前まで止まっていた）
+        if (!hasStarted) {
+          hasStarted = true;
+        }
+        timerBtn.textContent = "ストップ";
+        intervalId = setInterval(function () {
+          if (timeLeft == 0) {
+            clearInterval(intervalId);
+            currentExerciseIndex++;
+            timeLeft = exercises[currentExerciseIndex].interval;
+            timerBtn.textContent = "スタート";
+            isRunning = false;
+          } else {
+            timeLeft--;
+          }
+          display.textContent = timeLeft;
+        }, 1000)
+      } else if (!isRunning) {//タイマーが止まった場合（直前まで動いていた）
+        timerBtn.textContent = "スタート";
+        clearInterval(intervalId);
+      }
+    });
+
+
+
+    addBtn.addEventListener("click", function () {
+      const nameInput = document.getElementById("nameInput");
+      const setInput = document.getElementById("setInput");
+      const timeInput = document.getElementById("IntervalInput");
+      exercises.push({ name: nameInput.value, set: setInput.value, interval: timeInput.value });
+      list.innerHTML += `<li>${nameInput.value} ${setInput.value}セット ${timeInput.value}秒</li>`;
+      updateTimer();
+
+
+    })
+
+    function updateTimer() {
+      if (exercises.length == 0) {
+        display.textContent = "種目を追加してください";
+      } else if (currentExerciseIndex >= exercises.length) {
+        display.textContent = "全ての種目が終了しました";
+      } else if (exercises.length >= 1 && !hasStarted) {
+        timeLeft = exercises[0].interval;
+        display.textContent = timeLeft;
+      }
+    }
+
+    updateTimer();
+
+  </script>
+</body>
+
+</html>
