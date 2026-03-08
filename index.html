@@ -17,15 +17,22 @@
   <button id="addBtn">追加</button>
 
   <h1 id="timer"></h1>
+  <h1 id="name"></h1>
+  <h1 id="currentSet"></h1>
 
   <script>
-    let exercises = [];
+    let exercises = [];//種目の配列。オブジェクト{name, set, interval}を格納する。
+    let timeline = [];//オブジェクト{name, interval}を格納する。exercisesを展開したもの
     let currentExerciseIndex = 0;
     let isRunning = false;
     let hasStarted = false;// タイマーが開始されたかどうかを追跡するフラグ
 
     let timeLeft;
-    const display = document.getElementById("timer");
+
+    const display_timer = document.getElementById("timer");
+    const display_name = document.getElementById("name");
+    const display_currentSet = document.getElementById("currentSet");
+
     const timerBtn = document.getElementById("timerBtn");
     const addBtn = document.getElementById("addBtn");
     const list = document.getElementById("exerciseList");
@@ -34,9 +41,7 @@
     let intervalId;
     timerBtn.addEventListener("click", function () {
       isRunning = !isRunning;
-      console.log("isRunning:", isRunning);
-      console.log("hasStarted:", hasStarted);
-      console.log("timeLeft:", timeLeft);
+
       if (isRunning) {//タイマーが動き出した場合（直前まで止まっていた）
         if (!hasStarted) {
           hasStarted = true;
@@ -45,14 +50,18 @@
         intervalId = setInterval(function () {
           if (timeLeft == 0) {
             clearInterval(intervalId);
+
             currentExerciseIndex++;
-            timeLeft = exercises[currentExerciseIndex].interval;
+            timeLeft = timeline[currentExerciseIndex].interval;
+            display_name.textContent = timeline[currentExerciseIndex].name;
+            display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
+
             timerBtn.textContent = "スタート";
             isRunning = false;
           } else {
             timeLeft--;
           }
-          display.textContent = timeLeft;
+          display_timer.textContent = timeLeft;
         }, 1000)
       } else if (!isRunning) {//タイマーが止まった場合（直前まで動いていた）
         timerBtn.textContent = "スタート";
@@ -68,6 +77,9 @@
       const timeInput = document.getElementById("IntervalInput");
       exercises.push({ name: nameInput.value, set: setInput.value, interval: timeInput.value });
       list.innerHTML += `<li>${nameInput.value} ${setInput.value}セット ${timeInput.value}秒</li>`;
+      for (let i = 0; i < setInput.value; i++) {
+        timeline.push({ name: nameInput.value, interval: timeInput.value, currentSet: i + 1, totalSets: setInput.value });
+      }
       updateTimer();
 
 
@@ -75,12 +87,14 @@
 
     function updateTimer() {
       if (exercises.length == 0) {
-        display.textContent = "種目を追加してください";
+        display_timer.textContent = "種目を追加してください";
       } else if (currentExerciseIndex >= exercises.length) {
-        display.textContent = "全ての種目が終了しました";
+        display_timer.textContent = "全ての種目が終了しました";
       } else if (exercises.length >= 1 && !hasStarted) {
-        timeLeft = exercises[0].interval;
-        display.textContent = timeLeft;
+        timeLeft = timeline[0].interval;
+        display_timer.textContent = timeLeft;
+        display_name.textContent = timeline[0].name;
+        display_currentSet.textContent = `${timeline[0].currentSet} / ${timeline[0].totalSets} セット`;
       }
     }
 
