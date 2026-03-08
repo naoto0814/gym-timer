@@ -8,26 +8,32 @@
 
 <body>
   <ul id="exerciseList"></ul>
-
-  <input type="text" id="nameInput" placeholder="種目名">
-  <input type="number" id="setInput" placeholder="セット数">
-  <input type="number" id="IntervalInput" placeholder="インターバル">
-
+  <button id="editBtn">編集</button>
   <button id="timerBtn">スタート</button>
-  <button id="addBtn">追加</button>
+
+  <div id="editablearea">
+    <button id="addBtn">追加</button>
+    <input type="text" id="nameInput" placeholder="種目名">
+    <input type="number" id="setInput" placeholder="セット数">
+    <input type="number" id="IntervalInput" placeholder="インターバル">
+  </div>
 
   <h1 id="timer"></h1>
   <h1 id="name"></h1>
   <h1 id="currentSet"></h1>
 
   <script>
+
     let exercises = [];//種目の配列。オブジェクト{name, set, interval}を格納する。
     let timeline = [];//オブジェクト{name, interval}を格納する。exercisesを展開したもの
     let currentExerciseIndex = 0;
     let isRunning = false;
     let hasStarted = false;// タイマーが開始されたかどうかを追跡するフラグ
+    let isEditing = false;//編集中かどうかを追跡するフラグ
 
     let timeLeft;
+
+    const editablearea = document.getElementById("editablearea");
 
     const display_timer = document.getElementById("timer");
     const display_name = document.getElementById("name");
@@ -35,7 +41,12 @@
 
     const timerBtn = document.getElementById("timerBtn");
     const addBtn = document.getElementById("addBtn");
+    const editBtn = document.getElementById("editBtn");
     const list = document.getElementById("exerciseList");
+
+    const nameInput = document.getElementById("nameInput");
+    const setInput = document.getElementById("setInput");
+    const timeInput = document.getElementById("IntervalInput");
 
 
     let intervalId;
@@ -72,11 +83,8 @@
 
 
     addBtn.addEventListener("click", function () {
-      const nameInput = document.getElementById("nameInput");
-      const setInput = document.getElementById("setInput");
-      const timeInput = document.getElementById("IntervalInput");
       exercises.push({ name: nameInput.value, set: setInput.value, interval: timeInput.value });
-      list.innerHTML += `<li>${nameInput.value} ${setInput.value}セット ${timeInput.value}秒</li>`;
+      renderList();
       for (let i = 0; i < setInput.value; i++) {
         timeline.push({ name: nameInput.value, interval: timeInput.value, currentSet: i + 1, totalSets: setInput.value });
       }
@@ -85,7 +93,42 @@
 
     })
 
-    function updateTimer() {
+    editBtn.addEventListener("click", function () {
+      isEditing = !isEditing;
+      updateEditMode();
+    });
+
+    function renderList() {//exercisesの内容をHTMLのリストに反映させる関数
+      list.innerHTML = "";
+      exercises.forEach(function (ex, index) {
+        list.innerHTML += `<li>${ex.name} ${ex.set}セット ${ex.interval}秒 ${isEditing ? `<button onclick="deleteExercise(${index})">削除</button>` : ""}</li>`;
+      });
+    }
+
+    function deleteExercise(index) {//exercisesから該当の種目を削除する関数
+      exercises.splice(index, 1);
+      timeline = [];
+      exercises.forEach(function (ex) {
+        for (let i = 0; i < ex.set; i++) {
+          timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
+        }
+      });
+      renderList();
+      updateTimer();
+    }
+
+    function updateEditMode() {//編集中かどうかの状態を更新する関数
+      if (isEditing) {
+        editBtn.textContent = "完了";
+        editablearea.style.display = "block";
+      } else {
+        editBtn.textContent = "編集";
+        editablearea.style.display = "none";
+      }
+      renderList();
+    }
+
+    function updateTimer() {//タイマー表示を更新する関数
       if (exercises.length == 0) {
         display_timer.textContent = "種目を追加してください";
       } else if (currentExerciseIndex >= exercises.length) {
@@ -98,6 +141,8 @@
       }
     }
 
+    //初期状態の設定
+    updateEditMode();
     updateTimer();
 
   </script>
