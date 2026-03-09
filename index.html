@@ -4,145 +4,202 @@
 <head>
   <meta charset="UTF-8">
   <title>Gym Timer</title>
+  <style>
+    /* 追加エリアが分かりやすいように少しデザインを追加 */
+    #editablearea {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+  </style>
 </head>
 
 <body>
-  <ul id="exerciseList"></ul>
   <button id="editBtn">編集</button>
   <button id="timerBtn">スタート</button>
 
-  <div id="editablearea">
-    <button id="addBtn">追加</button>
-    <input type="text" id="nameInput" placeholder="種目名">
-    <input type="number" id="setInput" placeholder="セット数">
-    <input type="number" id="IntervalInput" placeholder="インターバル">
+  <ul id="exerciseList"></ul>
+
+  <div id="editablearea" style="display: none;">
+    <strong>＋ 新しい種目を追加</strong><br>
+    <input type="text" id="newName" placeholder="種目名">
+    <input type="number" id="newSet" placeholder="セット数">
+    <input type="number" id="newInterval" placeholder="インターバル（秒）">
+    <button id="addBtn" onclick="addExercise()">追加</button>
   </div>
 
+  <hr>
   <h1 id="timer"></h1>
   <h1 id="name"></h1>
   <h1 id="currentSet"></h1>
 
   <script>
-
-    let exercises = [];//種目の配列。オブジェクト{name, set, interval}を格納する。
-    let timeline = [];//オブジェクト{name, interval}を格納する。exercisesを展開したもの
+    let exercises = [];
+    let timeline = [];
     let currentExerciseIndex = 0;
     let isRunning = false;
-    let hasStarted = false;// タイマーが開始されたかどうかを追跡するフラグ
-    let isEditing = false;//編集中かどうかを追跡するフラグ
-
+    let hasStarted = false;
+    let isEditing = false;
     let timeLeft;
-
-    const editablearea = document.getElementById("editablearea");
 
     const display_timer = document.getElementById("timer");
     const display_name = document.getElementById("name");
     const display_currentSet = document.getElementById("currentSet");
-
     const timerBtn = document.getElementById("timerBtn");
-    const addBtn = document.getElementById("addBtn");
     const editBtn = document.getElementById("editBtn");
     const list = document.getElementById("exerciseList");
-
-    const nameInput = document.getElementById("nameInput");
-    const setInput = document.getElementById("setInput");
-    const timeInput = document.getElementById("IntervalInput");
-
+    const editablearea = document.getElementById("editablearea");
 
     let intervalId;
+
+    // --- タイマーの動作 ---
     timerBtn.addEventListener("click", function () {
+      if (isEditing) {
+        alert("編集を完了してからスタートしてください");
+        return;
+      }
       isRunning = !isRunning;
 
-      if (isRunning) {//タイマーが動き出した場合（直前まで止まっていた）
-        if (!hasStarted) {
-          hasStarted = true;
-        }
+      if (isRunning) {
+        if (!hasStarted) hasStarted = true;
         timerBtn.textContent = "ストップ";
         intervalId = setInterval(function () {
-          if (timeLeft == 0) {
+          if (timeLeft <= 0) {
             clearInterval(intervalId);
-
             currentExerciseIndex++;
-            console.log("currentExerciseIndex:", currentExerciseIndex);
-            console.log("timeline.length:", timeline.length);
+            
             if (currentExerciseIndex >= timeline.length) {
-              clearInterval(intervalId);
               updateTimer();
             } else {
               timeLeft = timeline[currentExerciseIndex].interval;
               display_name.textContent = timeline[currentExerciseIndex].name;
               display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
               display_timer.textContent = timeLeft;
+              
+              timerBtn.textContent = "スタート";
+              isRunning = false;
             }
-            timerBtn.textContent = "スタート";
-            isRunning = false;
           } else {
             timeLeft--;
             display_timer.textContent = timeLeft;
           }
         }, 1000)
-      } else if (!isRunning) {//タイマーが止まった場合（直前まで動いていた）
+      } else {
         timerBtn.textContent = "スタート";
         clearInterval(intervalId);
       }
     });
 
+    // --- 種目の追加 ---
+    function addExercise() {
+      // 専用のIDから値を取得するので絶対に重複しない！
+      const nameInput = document.getElementById("newName");
+      const setInput = document.getElementById("newSet");
+      const timeInput = document.getElementById("newInterval");
 
-
-    addBtn.addEventListener("click", function () {
-      exercises.push({ name: nameInput.value, set: setInput.value, interval: timeInput.value });
-      renderList();
-      for (let i = 0; i < setInput.value; i++) {
-        timeline.push({ name: nameInput.value, interval: timeInput.value, currentSet: i + 1, totalSets: setInput.value });
+      if(nameInput.value.trim() === "" || setInput.value.trim() === "" || timeInput.value.trim() === ""){
+        alert("全ての項目を入力してください");
+        return;
       }
-      updateTimer();
 
+      // 追加する前に、既存リストの編集途中のデータを保存
+      saveEdits();
 
-    })
-
-    editBtn.addEventListener("click", function () {
-      isEditing = !isEditing;
-      updateEditMode();
-    });
-
-    function renderList() {//exercisesの内容をHTMLのリストに反映させる関数
-      list.innerHTML = "";
-      exercises.forEach(function (ex, index) {
-        list.innerHTML += `<li>${ex.name} ${ex.set}セット ${ex.interval}秒 ${isEditing ? `<button onclick="deleteExercise(${index})">削除</button>` : ""}</li>`;
+      exercises.push({ 
+        name: nameInput.value, 
+        set: Number(setInput.value), 
+        interval: Number(timeInput.value) 
       });
+
+      // 追加が終わったら入力欄を空に戻す
+      nameInput.value = "";
+      setInput.value = "";
+      timeInput.value = "";
+
+      rebuildTimeline();
+      renderList();
+      updateTimer();
+      console.log(exercises);
     }
 
-    function deleteExercise(index) {//exercisesから該当の種目を削除する関数
-      exercises.splice(index, 1);
+    // --- タイムラインの再構築 ---
+    function rebuildTimeline() {
       timeline = [];
       exercises.forEach(function (ex) {
-        for (let i = 0; i < ex.set; i++) {
+        for (let i = 0; i < Number(ex.set); i++) {
           timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
         }
       });
+    }
+
+    // --- リストの描画 ---
+    function renderList() {
+      list.innerHTML = "";
+      exercises.forEach(function (ex, index) {
+        if (isEditing) {
+          // 編集時はIDではなくclassをつける
+          list.innerHTML += `
+            <li style="margin-bottom: 5px;">
+              <input type="text" value="${ex.name}" class="edit-name">
+              <input type="number" value="${ex.set}" class="edit-set" style="width: 50px;"> セット
+              <input type="number" value="${ex.interval}" class="edit-interval" style="width: 50px;"> 秒
+              <button onclick="deleteExercise(${index})">削除</button>
+            </li>`;
+        } else {
+          list.innerHTML += `<li>${ex.name} : ${ex.set}セット / ${ex.interval}秒</li>`;
+        }
+      });
+    }
+
+    // --- 編集内容の保存 ---
+    function saveEdits() {
+      if (!isEditing) return;
+      const nameInputs = document.querySelectorAll(".edit-name");
+      const setInputs = document.querySelectorAll(".edit-set");
+      const intervalInputs = document.querySelectorAll(".edit-interval");
+
+      exercises.forEach(function (ex, index) {
+        if(nameInputs[index]) ex.name = nameInputs[index].value;
+        if(setInputs[index]) ex.set = Number(setInputs[index].value);
+        if(intervalInputs[index]) ex.interval = Number(intervalInputs[index].value);
+      });
+    }
+
+    // --- 削除 ---
+    function deleteExercise(index) {
+      saveEdits();
+      exercises.splice(index, 1);
+      rebuildTimeline();
       renderList();
       updateTimer();
     }
 
-    function updateEditMode() {//編集中かどうかの状態を更新する関数
+    // --- 編集モード切替 ---
+    editBtn.addEventListener("click", function () {
+      isEditing = !isEditing;
       if (isEditing) {
         editBtn.textContent = "完了";
-        editablearea.style.display = "block";
+        editablearea.style.display = "block"; // 追加エリアを表示
       } else {
         editBtn.textContent = "編集";
-        editablearea.style.display = "none";
+        editablearea.style.display = "none"; // 追加エリアを隠す
+        
+        saveEdits();
+        rebuildTimeline();
         localStorage.setItem("exercises", JSON.stringify(exercises));
       }
       renderList();
-    }
+      updateTimer();
+    });
 
-    function updateTimer() {//タイマー表示を更新する関数
+    // --- タイマー表示の更新 ---
+    function updateTimer() {
       if (exercises.length == 0) {
         display_timer.textContent = "種目を追加してください";
       } else if (currentExerciseIndex >= timeline.length) {
-        console.log("全ての種目が終了");
-        display_timer.textContent = "全ての種目が終了しました";
-      } else if (exercises.length >= 1 && !hasStarted) {
+        display_timer.textContent = "終了！";
+      } else if (!hasStarted) {
         timeLeft = timeline[0].interval;
         display_timer.textContent = timeLeft;
         display_name.textContent = timeline[0].name;
@@ -150,18 +207,20 @@
       }
     }
 
-    //初期状態の設定
+    // --- 初期ロード ---
     const savedExercises = localStorage.getItem("exercises");
     if (savedExercises) {
-      exercises = JSON.parse(savedExercises);
-      timeline = [];
-      exercises.forEach(function (ex) {
-        for (let i = 0; i < ex.set; i++) {
-          timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
+      try{
+        exercises = JSON.parse(savedExercises);
+        if(!Array.isArray(exercises)){
+          exercises = [];
         }
-      });
+      }catch(error){
+        exercises = [];
+      }
+      rebuildTimeline();
     }
-    updateEditMode();
+    renderList();
     updateTimer();
 
   </script>
