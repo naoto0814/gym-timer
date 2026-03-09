@@ -16,9 +16,6 @@
 </head>
 
 <body>
-  <button id="editBtn">編集</button>
-  <button id="timerBtn">スタート</button>
-
   <ul id="exerciseList"></ul>
 
   <div id="editablearea" style="display: none;">
@@ -28,6 +25,9 @@
     <input type="number" id="newInterval" placeholder="インターバル（秒）">
     <button id="addBtn" onclick="addExercise()">追加</button>
   </div>
+
+  <button id="editBtn">編集</button>
+  <button id="timerBtn">スタート</button>
 
   <hr>
   <h1 id="timer"></h1>
@@ -120,7 +120,6 @@
       rebuildTimeline();
       renderList();
       updateTimer();
-      console.log(exercises);
     }
 
     // --- タイムラインの再構築 ---
@@ -147,14 +146,13 @@
               <button onclick="deleteExercise(${index})">削除</button>
             </li>`;
         } else {
-          list.innerHTML += `<li>${ex.name} : ${ex.set}セット / ${ex.interval}秒</li>`;
+          list.innerHTML += `<li>${ex.name} : ${ex.set}セット ${ex.interval}秒</li>`;
         }
       });
     }
 
     // --- 編集内容の保存 ---
     function saveEdits() {
-      if (!isEditing) return;
       const nameInputs = document.querySelectorAll(".edit-name");
       const setInputs = document.querySelectorAll(".edit-set");
       const intervalInputs = document.querySelectorAll(".edit-interval");
