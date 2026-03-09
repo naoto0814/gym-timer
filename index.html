@@ -57,7 +57,13 @@
     }
 
     #exerciseList {
-      font-size: 40px;
+      font-size: 50px;
+      margin-top: 20px;
+    }
+
+    #btnArea {
+      display: flex;
+      gap: 50px;
       margin-top: 20px;
     }
 
@@ -75,9 +81,11 @@
   <h1 id="name"></h1>
   <h1 id="timer">0:00</h1>
   <h1 id="currentSet"></h1>
-  <button id="timerBtn">スタート</button>
-  <button id="skipBtn">スキップ</button>
 
+  <div id="btnArea">
+    <button id="timerBtn">スタート</button>
+    <button id="skipBtn">スキップ</button>
+  </div>
   <ul id="exerciseList"></ul>
 
   <div id="editablearea" style="display: none;">
@@ -272,10 +280,17 @@
     // --- タイマー表示の更新 ---
     function updateTimer() {
       if (exercises.length == 0) {
+        display_timer.style.fontSize = "100px";
         display_timer.textContent = "種目を追加してください";
+        display_name.textContent = "";
+        display_currentSet.textContent = "";
       } else if (currentExerciseIndex >= timeline.length) {
-        display_timer.textContent = "終了です！お疲れさまでした！";
+        display_timer.style.fontSize = "100px";
+        display_timer.textContent = "終了です！お疲れ様でした！";
+        display_name.textContent = "";
+        display_currentSet.textContent = "";
       } else if (!hasStarted) {
+        display_timer.style.fontSize = "350px";
         timeLeft = timeline[0].interval;
         display_timer.textContent = secondsToTime(timeLeft);
         display_name.textContent = timeline[0].name;
