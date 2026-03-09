@@ -126,6 +126,7 @@
       isRunning = !isRunning;
 
       if (isRunning) {
+        requestWakeLock(); // 画面をオフにさせない  
         if (!hasStarted) hasStarted = true;
         timerBtn.textContent = "ストップ";
         intervalId = setInterval(function () {
@@ -179,7 +180,7 @@
 
     // --- 種目の追加 ---
     function addExercise() {
-      // 専用のIDから値を取得するので絶対に重複しない！
+      // 専用のIDから値を取得するので絶対に重複しない
       const nameInput = document.getElementById("newName");
       const setInput = document.getElementById("newSet");
       const timeInput = document.getElementById("newInterval");
@@ -302,6 +303,15 @@
       const minutes = Math.floor(sec / 60);
       const seconds = sec % 60;
       return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    // 画面をオフにさせない
+    async function requestWakeLock() {
+      try {
+        await navigator.wakeLock.request("screen");
+      } catch (e) {
+        console.log("Wake Lock非対応");
+      }
     }
 
     // --- 初期ロード ---
