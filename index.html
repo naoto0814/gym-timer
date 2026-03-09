@@ -5,21 +5,82 @@
   <meta charset="UTF-8">
   <title>Gym Timer</title>
   <style>
-    /* 追加エリアが分かりやすいように少しデザインを追加 */
+    body {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    button {
+      background-color: #333;
+      color: #ffffff;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 40px;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    input {
+      background-color: #333;
+      color: #ffffff;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 40px;
+    }
+
+    #timer {
+      font-size: 350px;
+      font-weight: bold;
+      letter-spacing: 20px;
+      margin: 0px 0;
+    }
+
+    #name {
+      font-size: 80px;
+      font-weight: bold;
+    }
+
+    #currentSet {
+      font-size: 80px;
+    }
+
+    #exerciseList {
+      font-size: 40px;
+      margin-top: 20px;
+    }
+
+
     #editablearea {
       margin-top: 15px;
       padding: 10px;
       border: 1px solid #ccc;
-      background-color: #f9f9f9;
+      background-color: #1a1a1a;
     }
   </style>
 </head>
 
 <body>
+  <h1 id="name"></h1>
+  <h1 id="timer">0:00</h1>
+  <h1 id="currentSet"></h1>
+  <button id="timerBtn">スタート</button>
+  <button id="skipBtn">スキップ</button>
+
   <ul id="exerciseList"></ul>
 
   <div id="editablearea" style="display: none;">
-    <strong>＋ 新しい種目を追加</strong><br>
     <input type="text" id="newName" placeholder="種目名">
     <input type="number" id="newSet" placeholder="セット数">
     <input type="number" id="newInterval" placeholder="インターバル（秒）">
@@ -27,12 +88,6 @@
   </div>
 
   <button id="editBtn">編集</button>
-  <button id="timerBtn">スタート</button>
-
-  <hr>
-  <h1 id="timer"></h1>
-  <h1 id="name"></h1>
-  <h1 id="currentSet"></h1>
 
   <script>
     let exercises = [];
@@ -47,6 +102,7 @@
     const display_name = document.getElementById("name");
     const display_currentSet = document.getElementById("currentSet");
     const timerBtn = document.getElementById("timerBtn");
+    const skipBtn = document.getElementById("skipBtn");
     const editBtn = document.getElementById("editBtn");
     const list = document.getElementById("exerciseList");
     const editablearea = document.getElementById("editablearea");
@@ -68,21 +124,21 @@
           if (timeLeft <= 0) {
             clearInterval(intervalId);
             currentExerciseIndex++;
-            
+
             if (currentExerciseIndex >= timeline.length) {
               updateTimer();
             } else {
               timeLeft = timeline[currentExerciseIndex].interval;
               display_name.textContent = timeline[currentExerciseIndex].name;
               display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
-              display_timer.textContent = timeLeft;
-              
+              display_timer.textContent = secondsToTime(timeLeft);
+
               timerBtn.textContent = "スタート";
               isRunning = false;
             }
           } else {
             timeLeft--;
-            display_timer.textContent = timeLeft;
+            display_timer.textContent = secondsToTime(timeLeft);
           }
         }, 1000)
       } else {
@@ -91,6 +147,28 @@
       }
     });
 
+    skipBtn.addEventListener("click", function () {
+      if (isEditing) {
+        alert("編集を完了してからスキップしてください");
+        return;
+      }
+      currentExerciseIndex++;
+      if (currentExerciseIndex >= timeline.length) {
+        updateTimer();
+      } else {
+        timeLeft = timeline[currentExerciseIndex].interval;
+        display_name.textContent = timeline[currentExerciseIndex].name;
+        display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
+        display_timer.textContent = secondsToTime(timeLeft);
+
+        timerBtn.textContent = "スタート";
+        isRunning = false;
+        clearInterval(intervalId);
+      }
+
+
+    })
+
     // --- 種目の追加 ---
     function addExercise() {
       // 専用のIDから値を取得するので絶対に重複しない！
@@ -98,7 +176,7 @@
       const setInput = document.getElementById("newSet");
       const timeInput = document.getElementById("newInterval");
 
-      if(nameInput.value.trim() === "" || setInput.value.trim() === "" || timeInput.value.trim() === ""){
+      if (nameInput.value.trim() === "" || setInput.value.trim() === "" || timeInput.value.trim() === "") {
         alert("全ての項目を入力してください");
         return;
       }
@@ -106,10 +184,10 @@
       // 追加する前に、既存リストの編集途中のデータを保存
       saveEdits();
 
-      exercises.push({ 
-        name: nameInput.value, 
-        set: Number(setInput.value), 
-        interval: Number(timeInput.value) 
+      exercises.push({
+        name: nameInput.value,
+        set: Number(setInput.value),
+        interval: Number(timeInput.value)
       });
 
       // 追加が終わったら入力欄を空に戻す
@@ -158,9 +236,9 @@
       const intervalInputs = document.querySelectorAll(".edit-interval");
 
       exercises.forEach(function (ex, index) {
-        if(nameInputs[index]) ex.name = nameInputs[index].value;
-        if(setInputs[index]) ex.set = Number(setInputs[index].value);
-        if(intervalInputs[index]) ex.interval = Number(intervalInputs[index].value);
+        if (nameInputs[index]) ex.name = nameInputs[index].value;
+        if (setInputs[index]) ex.set = Number(setInputs[index].value);
+        if (intervalInputs[index]) ex.interval = Number(intervalInputs[index].value);
       });
     }
 
@@ -182,7 +260,7 @@
       } else {
         editBtn.textContent = "編集";
         editablearea.style.display = "none"; // 追加エリアを隠す
-        
+
         saveEdits();
         rebuildTimeline();
         localStorage.setItem("exercises", JSON.stringify(exercises));
@@ -196,24 +274,30 @@
       if (exercises.length == 0) {
         display_timer.textContent = "種目を追加してください";
       } else if (currentExerciseIndex >= timeline.length) {
-        display_timer.textContent = "終了！";
+        display_timer.textContent = "終了です！お疲れさまでした！";
       } else if (!hasStarted) {
         timeLeft = timeline[0].interval;
-        display_timer.textContent = timeLeft;
+        display_timer.textContent = secondsToTime(timeLeft);
         display_name.textContent = timeline[0].name;
         display_currentSet.textContent = `${timeline[0].currentSet} / ${timeline[0].totalSets} セット`;
       }
     }
 
+    function secondsToTime(sec) {
+      const minutes = Math.floor(sec / 60);
+      const seconds = sec % 60;
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
     // --- 初期ロード ---
     const savedExercises = localStorage.getItem("exercises");
     if (savedExercises) {
-      try{
+      try {
         exercises = JSON.parse(savedExercises);
-        if(!Array.isArray(exercises)){
+        if (!Array.isArray(exercises)) {
           exercises = [];
         }
-      }catch(error){
+      } catch (error) {
         exercises = [];
       }
       rebuildTimeline();
