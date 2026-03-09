@@ -124,6 +124,7 @@
       } else {
         editBtn.textContent = "編集";
         editablearea.style.display = "none";
+        localStorage.setItem("exercises", JSON.stringify(exercises));
       }
       renderList();
     }
@@ -142,6 +143,16 @@
     }
 
     //初期状態の設定
+  const savedExercises = localStorage.getItem("exercises");
+  if(savedExercises){
+    exercises=JSON.parse(savedExercises);
+    timeline = [];
+    exercises.forEach(function (ex) {
+      for (let i = 0; i < ex.set; i++) {
+        timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
+      }
+    });
+  }
     updateEditMode();
     updateTimer();
 
