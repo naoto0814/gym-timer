@@ -63,16 +63,23 @@
             clearInterval(intervalId);
 
             currentExerciseIndex++;
-            timeLeft = timeline[currentExerciseIndex].interval;
-            display_name.textContent = timeline[currentExerciseIndex].name;
-            display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
-
+            console.log("currentExerciseIndex:", currentExerciseIndex);
+            console.log("timeline.length:", timeline.length);
+            if (currentExerciseIndex >= timeline.length) {
+              clearInterval(intervalId);
+              updateTimer();
+            } else {
+              timeLeft = timeline[currentExerciseIndex].interval;
+              display_name.textContent = timeline[currentExerciseIndex].name;
+              display_currentSet.textContent = `${timeline[currentExerciseIndex].currentSet} / ${timeline[currentExerciseIndex].totalSets} セット`;
+              display_timer.textContent = timeLeft;
+            }
             timerBtn.textContent = "スタート";
             isRunning = false;
           } else {
             timeLeft--;
+            display_timer.textContent = timeLeft;
           }
-          display_timer.textContent = timeLeft;
         }, 1000)
       } else if (!isRunning) {//タイマーが止まった場合（直前まで動いていた）
         timerBtn.textContent = "スタート";
@@ -132,7 +139,8 @@
     function updateTimer() {//タイマー表示を更新する関数
       if (exercises.length == 0) {
         display_timer.textContent = "種目を追加してください";
-      } else if (currentExerciseIndex >= exercises.length) {
+      } else if (currentExerciseIndex >= timeline.length) {
+        console.log("全ての種目が終了");
         display_timer.textContent = "全ての種目が終了しました";
       } else if (exercises.length >= 1 && !hasStarted) {
         timeLeft = timeline[0].interval;
@@ -143,16 +151,16 @@
     }
 
     //初期状態の設定
-  const savedExercises = localStorage.getItem("exercises");
-  if(savedExercises){
-    exercises=JSON.parse(savedExercises);
-    timeline = [];
-    exercises.forEach(function (ex) {
-      for (let i = 0; i < ex.set; i++) {
-        timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
-      }
-    });
-  }
+    const savedExercises = localStorage.getItem("exercises");
+    if (savedExercises) {
+      exercises = JSON.parse(savedExercises);
+      timeline = [];
+      exercises.forEach(function (ex) {
+        for (let i = 0; i < ex.set; i++) {
+          timeline.push({ name: ex.name, interval: ex.interval, currentSet: i + 1, totalSets: ex.set });
+        }
+      });
+    }
     updateEditMode();
     updateTimer();
 
